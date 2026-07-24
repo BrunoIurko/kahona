@@ -1,9 +1,11 @@
 # syntax=docker/dockerfile:1.20
-FROM node:lts-trixie-slim AS base
+FROM node:lts-bookworm-slim AS base
 ARG USER_UID=1000
 ARG USER_GID=1000
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates gosu curl gh git wget ripgrep python3 \
+
+RUN apt-get clean \
+  && apt-get update -o Acquire::Retries=3 \
+  && apt-get install -y --fix-missing --no-install-recommends ca-certificates gosu curl gh git wget ripgrep python3 \
   && rm -rf /var/lib/apt/lists/* \
   && corepack enable
 
@@ -21,10 +23,11 @@ COPY ui/package.json ui/
 COPY packages/shared/package.json packages/shared/
 COPY packages/db/package.json packages/db/
 COPY packages/adapter-utils/package.json packages/adapter-utils/
+COPY packages/google-sheets-mcp-server/package.json packages/google-sheets-mcp-server/
+COPY packages/kv-demo-mcp-server/package.json packages/kv-demo-mcp-server/
 COPY packages/mcp-server/package.json packages/mcp-server/
 COPY packages/skills-catalog/package.json packages/skills-catalog/
 COPY packages/teams-catalog/package.json packages/teams-catalog/
-COPY packages/adapters/acpx-local/package.json packages/adapters/acpx-local/
 COPY packages/adapters/claude-local/package.json packages/adapters/claude-local/
 COPY packages/adapters/codex-local/package.json packages/adapters/codex-local/
 COPY packages/adapters/cursor-cloud/package.json packages/adapters/cursor-cloud/
@@ -61,8 +64,8 @@ ARG USER_GID=1000
 WORKDIR /app
 COPY --chown=node:node --from=build /app /app
 RUN npm install --global --omit=dev @anthropic-ai/claude-code@latest @openai/codex@latest opencode-ai @google/gemini-cli@latest \
-  && apt-get update \
-  && apt-get install -y --no-install-recommends openssh-client jq \
+  && apt-get update -o Acquire::Retries=3 \
+  && apt-get install -y --fix-missing --no-install-recommends openssh-client jq \
   && rm -rf /var/lib/apt/lists/* \
   && mkdir -p /paperclip \
   && chown node:node /paperclip
